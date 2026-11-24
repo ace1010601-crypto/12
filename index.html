@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>作業04：擲雙骰子</title>
+  <style>
+    :root {
+      --bg: #f2f5fb;
+      --card: #ffffff;
+      --ink: #20283a;
+      --muted: #68738a;
+      --accent: #526fe5;
+      --accent-dark: #3d57c7;
+      --gold: #f2b84b;
+      --line: #e5eaf3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 32px 16px;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top, #e3eaff, var(--bg) 52%);
+    }
+    .container { width: min(900px, 100%); margin: auto; }
+    header { text-align: center; margin-bottom: 26px; }
+    .eyebrow { color: var(--accent); font-weight: 800; letter-spacing: 2px; font-size: 13px; }
+    h1 { margin: 8px 0; font-size: clamp(28px, 5vw, 40px); }
+    header p { color: var(--muted); margin: 0; }
+    .scoreboard {
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+      gap: 14px; background: var(--card); padding: 20px 24px;
+      border: 1px solid var(--line); border-radius: 20px;
+      box-shadow: 0 10px 30px #25365b0d; margin-bottom: 18px;
+    }
+    .score { text-align: center; }
+    .score .name { color: var(--muted); font-size: 14px; font-weight: 700; }
+    .score .number { font-size: 42px; line-height: 1.2; font-weight: 900; }
+    .vs { color: #9aa4b7; font-weight: 900; }
+    .game {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+    }
+    .player {
+      background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+      padding: 24px; text-align: center; box-shadow: 0 10px 30px #25365b0d;
+    }
+    .player h2 { margin: 0 0 5px; font-size: 20px; }
+    .player .hint { color: var(--muted); font-size: 13px; }
+    .dice-row { display: flex; justify-content: center; gap: 14px; margin: 24px 0 16px; }
+    .die {
+      width: 86px; height: 86px; display: grid; place-items: center;
+      background: #fff; border: 2px solid #e4e9f3; border-radius: 18px;
+      color: var(--accent); font-size: 62px; line-height: 1;
+      box-shadow: 0 5px 12px #1f31520d;
+    }
+    .total { font-size: 15px; color: var(--muted); }
+    .total strong { color: var(--ink); font-size: 24px; margin-left: 5px; }
+    .result {
+      margin-top: 18px; padding: 18px; min-height: 94px; text-align: center;
+      border-radius: 16px; background: #edf1ff; border: 1px solid #dfe6ff;
+    }
+    .result strong { display: block; font-size: 19px; margin-bottom: 5px; }
+    .result span { color: var(--muted); font-size: 14px; }
+    .actions { display: flex; justify-content: center; gap: 12px; margin: 20px 0; }
+    button {
+      border: 0; border-radius: 12px; padding: 13px 25px; font-size: 16px;
+      font-weight: 800; cursor: pointer; transition: .15s ease;
+    }
+    button:hover { transform: translateY(-2px); }
+    button:focus-visible { outline: 3px solid #9eafff; outline-offset: 3px; }
+    .roll { background: var(--accent); color: white; box-shadow: 0 6px 14px #526fe53b; }
+    .roll:hover { background: var(--accent-dark); }
+    .reset { background: #e9edf5; color: #46516a; }
+    button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .rules {
+      background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+      padding: 20px 24px; margin-top: 22px;
+    }
+    .rules h3 { margin: 0 0 10px; }
+    .rules ol { margin: 0; padding-left: 22px; color: var(--muted); line-height: 1.9; }
+    .foot { text-align: center; color: #98a1b2; font-size: 12px; margin-top: 20px; }
+    @media (max-width: 600px) {
+      body { padding: 22px 12px; }
+      .scoreboard { padding: 16px 10px; }
+      .player { padding: 18px 10px; }
+      .die { width: 66px; height: 66px; font-size: 49px; border-radius: 14px; }
+      .dice-row { gap: 8px; }
+      .game { gap: 10px; }
+      button { padding: 12px 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <div class="eyebrow">PYTHON 作業 04 · HTML WEB GAME</div>
+      <h1>🎲 擲雙骰子</h1>
+      <p>和電腦來一場骰子對決，率先取得 3 勝就能贏得遊戲！</p>
+    </header>
+
+    <section class="scoreboard" aria-label="目前比分">
+      <div class="score">
+        <div class="name">🙋 玩家</div>
+        <div class="number" id="playerScore">0</div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="score">
+        <div class="name">💻 電腦</div>
+        <div class="number" id="computerScore">0</div>
+      </div>
+    </section>
+
+    <section class="game">
+      <article class="player">
+        <h2>🙋 玩家</h2>
+        <div class="hint">你的骰子</div>
+        <div class="dice-row">
+          <div class="die" id="pDie1" aria-label="玩家第一顆骰子">⚀</div>
+          <div class="die" id="pDie2" aria-label="玩家第二顆骰子">⚀</div>
+        </div>
+        <div class="total">總點數<strong id="pTotal">—</strong></div>
+      </article>
+      <article class="player">
+        <h2>💻 電腦</h2>
+        <div class="hint">電腦的骰子</div>
+        <div class="dice-row">
+          <div class="die" id="cDie1" aria-label="電腦第一顆骰子">⚀</div>
+          <div class="die" id="cDie2" aria-label="電腦第二顆骰子">⚀</div>
+        </div>
+        <div class="total">總點數<strong id="cTotal">—</strong></div>
+      </article>
+    </section>
+
+    <section class="result" aria-live="polite">
+      <strong id="resultTitle">準備好了嗎？</strong>
+      <span id="resultText">按下「開始擲骰」開始遊戲！</span>
+    </section>
+
+    <div class="actions">
+      <button class="roll" id="rollButton" onclick="rollDice()">🎲 開始擲骰</button>
+      <button class="reset" onclick="resetGame()">重新開始</button>
+    </div>
+
+    <section class="rules">
+      <h3>📖 遊戲規則</h3>
+      <ol>
+        <li>玩家與電腦各擲兩顆 1～6 點的骰子。</li>
+        <li>只有一方擲出豹子（兩顆骰子相同）時，豹子的一方直接獲勝。</li>
+        <li>雙方都有豹子，或雙方都沒有豹子時，比較兩顆骰子的總點數。</li>
+        <li>先取得 3 勝的一方獲得最終勝利。</li>
+      </ol>
+    </section>
+    <div class="foot">作業04：擲雙骰子 · 使用 HTML、CSS、JavaScript 製作</div>
+  </main>
+
+  <script>
+    const diceFaces = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+    let playerScore = 0;
+    let computerScore = 0;
+    let gameOver = false;
+
+    function randomDie() {
+      return Math.floor(Math.random() * 6) + 1;
+    }
+
+    function rollDice() {
+      if (gameOver) return;
+
+      const p1 = randomDie();
+      const p2 = randomDie();
+      const c1 = randomDie();
+      const c2 = randomDie();
+
+      document.getElementById("pDie1").textContent = diceFaces[p1];
+      document.getElementById("pDie2").textContent = diceFaces[p2];
+      document.getElementById("cDie1").textContent = diceFaces[c1];
+      document.getElementById("cDie2").textContent = diceFaces[c2];
+
+      const pTotal = p1 + p2;
+      const cTotal = c1 + c2;
+      const pTriple = p1 === p2;
+      const cTriple = c1 === c2;
+
+      document.getElementById("pTotal").textContent = pTotal;
+      document.getElementById("cTotal").textContent = cTotal;
+
+      let winner = "";
+      let explanation = "";
+
+      if (pTriple && !cTriple) {
+        winner = "player";
+        explanation = "玩家擲出豹子，直接獲勝！";
+      } else if (cTriple && !pTriple) {
+        winner = "computer";
+        explanation = "電腦擲出豹子，直接獲勝！";
+      } else if (pTotal > cTotal) {
+        winner = "player";
+        explanation = (pTriple && cTriple ? "雙方都是豹子，" : "") + "玩家總點數較大！";
+      } else if (cTotal > pTotal) {
+        winner = "computer";
+        explanation = (pTriple && cTriple ? "雙方都是豹子，" : "") + "電腦總點數較大！";
+      } else {
+        explanation = "雙方點數相同，這回合平手！";
+      }
+
+      if (winner === "player") playerScore++;
+      if (winner === "computer") computerScore++;
+
+      document.getElementById("playerScore").textContent = playerScore;
+      document.getElementById("computerScore").textContent = computerScore;
+
+      const title = document.getElementById("resultTitle");
+      const text = document.getElementById("resultText");
+
+      if (playerScore >= 3 || computerScore >= 3) {
+        gameOver = true;
+        document.getElementById("rollButton").disabled = true;
+        if (playerScore >= 3) {
+          title.textContent = "🎉 恭喜玩家獲得最終勝利！";
+          text.textContent = "玩家率先取得 3 勝，太厲害了！";
+        } else {
+          title.textContent = "💻 電腦獲得最終勝利！";
+          text.textContent = "電腦率先取得 3 勝，再挑戰一次吧！";
+        }
+      } else if (winner === "player") {
+        title.textContent = "🎉 這回合玩家獲勝！";
+        text.textContent = explanation;
+      } else if (winner === "computer") {
+        title.textContent = "💻 這回合電腦獲勝！";
+        text.textContent = explanation;
+      } else {
+        title.textContent = "🤝 這回合平手！";
+        text.textContent = explanation;
+      }
+    }
+
+    function resetGame() {
+      playerScore = 0;
+      computerScore = 0;
+      gameOver = false;
+
+      document.getElementById("playerScore").textContent = "0";
+      document.getElementById("computerScore").textContent = "0";
+      document.getElementById("pDie1").textContent = "⚀";
+      document.getElementById("pDie2").textContent = "⚀";
+      document.getElementById("cDie1").textContent = "⚀";
+      document.getElementById("cDie2").textContent = "⚀";
+      document.getElementById("pTotal").textContent = "—";
+      document.getElementById("cTotal").textContent = "—";
+      document.getElementById("resultTitle").textContent = "準備好了嗎？";
+      document.getElementById("resultText").textContent = "按下「開始擲骰」開始遊戲！";
+      document.getElementById("rollButton").disabled = false;
+    }
+  </script>
+</body>
+</html>
